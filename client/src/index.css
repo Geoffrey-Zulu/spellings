@@ -2,7 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom styles */
 body {
-  font-family: 'Inter', sans-serif;
-  background-color: #f9fafb;
+  background-color: #F5F5F5;
+  font-family: 'Istok Web', sans-serif;
+}
+button {
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #0A1335; 
 }
