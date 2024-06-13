@@ -1,12 +1,21 @@
 // /client/src/components/Header.js
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleQuestion } from '@fortawesome/free-solid-svg-icons'; // Use solid style for clarity
 
 const Header = () => {
   return (
-    <header className="bg-gray-800 p-4">
-      <div className="container mx-auto">
-        <h1 className="text-white text-3xl font-bold">Word Game</h1>
-      </div>
+    <header className="bg-white py-4 px-6 border-b border-black flex justify-between items-center">
+      <h1 className="text-4xl font-serif font-bold tracking-tighter text-black mx-auto">
+        Adess Spellings
+      </h1>
+      <button
+        className="text-black hover:text-gray-700 focus:outline-none focus:ring-0 active:bg-transparent"
+        aria-label="How to Play"
+        onClick={() => alert('How to play modal content will go here.')}
+      >
+        <FontAwesomeIcon icon={faCircleQuestion} size="2x"/>
+      </button>
     </header>
   );
 };

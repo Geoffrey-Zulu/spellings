@@ -1,16 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+@import "~@fortawesome/fontawesome-svg-core/styles.css";
 /* Custom styles */
 body {
   background-color: #F5F5F5;
   font-family: 'Istok Web', sans-serif;
 }
-button {
+.button {
   transition: background-color 0.3s ease;
 }
 
-button:hover {
+.button-1:hover {
   background-color: #0A1335; 
 }
+.button-2:hover {
+  background-color: #0A1335; 
+}
+
+
+
