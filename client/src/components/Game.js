@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlayCircle, faStopCircle } from '@fortawesome/free-solid-svg-icons';
 import audioWave from '../assets/images/audio-wave.gif';
@@ -7,8 +7,9 @@ import axios from 'axios';
 
 const Game = () => {
   const [currentWord, setCurrentWord] = useState('');
-  const [isPlaying, setIsPlaying] = useState([false, false, false]); // Independent play states
-  const [audioUrls, setAudioUrls] = useState([null, null, null]); // Store audio URLs
+  const [isPlaying, setIsPlaying] = useState([false, false, false]); 
+  const [audioUrls, setAudioUrls] = useState([null, null, null]);
+  const audioRefs = [useRef(null), useRef(null), useRef(null)]; 
 
   const maxWordLength = 10;
 
@@ -23,8 +24,35 @@ const Game = () => {
   };
 
   const handlePlayClick = (index) => {
-    setIsPlaying((prev) => prev.map((state, i) => i === index ? !state : false));
+    setIsPlaying((prev) => prev.map((state, i) => {
+      if (i === index && state) {
+        // If the same audio is playing, stop it
+        audioRefs[index].current.pause();
+        audioRefs[index].current.currentTime = 0; 
+        return false;
+      } else {
+        // Otherwise, stop all other audios and play the selected one
+        audioRefs.forEach((audioRef, i) => {
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0; 
+          }
+        });
+        return i === index;
+      }
+    }));
   };
+
+  // Effect to handle audio playback
+  useEffect(() => {
+    audioRefs.forEach((audioRef, index) => {
+      if (audioRef.current) {
+        if (isPlaying[index]) {
+          audioRef.current.play();
+        }
+      }
+    });
+  }, [isPlaying]);
 
   useEffect(() => {
     // Fetch today's word and audio data
@@ -33,11 +61,14 @@ const Game = () => {
         const response = await axios.get('http://localhost:3001/api/today/today');
         const { wordAudioUrl, meaningAudioUrl, exampleAudioUrl } = response.data;
 
+        // Construct full URLs
+        const baseUrl = 'http://localhost:3001'; 
         setAudioUrls([
-          wordAudioUrl,
-          meaningAudioUrl,
-          exampleAudioUrl
+          `${baseUrl}${wordAudioUrl}`,
+          `${baseUrl}${meaningAudioUrl}`,
+          `${baseUrl}${exampleAudioUrl}`
         ]);
+        
       } catch (error) {
         console.error('Error fetching audio data:', error);
       }
@@ -63,9 +94,13 @@ const Game = () => {
             >
               <FontAwesomeIcon icon={isPlaying[index] ? faStopCircle : faPlayCircle} />
             </button>
-            {label}: <span className="font-light ml-2">{`${label} goes here`}</span>
+            {label}: <span className="font-light ml-2">{`Play for ${label}`}</span>
             {audioUrls[index] && (
-              <audio src={audioUrls[index]} autoPlay={isPlaying[index]} />
+              <audio
+                ref={audioRefs[index]}
+                src={audioUrls[index]}
+                onEnded={() => setIsPlaying((prev) => prev.map((state, i) => i === index ? false : state))}
+              />
             )}
           </div>
         ))}
