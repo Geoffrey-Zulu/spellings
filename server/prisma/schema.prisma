@@ -7,10 +7,25 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Word {
-  id        Int      @id @default(autoincrement())
-  text      String   @unique
-  definition String
-  example   String?
-  createdAt DateTime @default(now())
+model Admin {
+  id           Int    @id @default(autoincrement())
+  passwordHash String @map("password_hash")
+}
+
+model WordEntry {
+  id          Int      @id @default(autoincrement())
+  word        String
+  meaning     String
+  example     String
+  entryDate   String   @unique @map("entry_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+}
+
+model AudioEntry {
+  id           Int      @id @default(autoincrement())
+  wordAudio    Bytes
+  meaningAudio Bytes
+  exampleAudio Bytes
+  entryDate    String   @unique @map("entry_date")
+  createdAt    DateTime @default(now()) @map("created_at")
 }
