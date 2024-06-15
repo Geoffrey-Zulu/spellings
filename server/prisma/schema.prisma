@@ -1,10 +1,10 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
 }
 
 model Admin {
@@ -13,12 +13,12 @@ model Admin {
 }
 
 model WordEntry {
-  id          Int      @id @default(autoincrement())
-  word        String
-  meaning     String
-  example     String
-  entryDate   String   @unique @map("entry_date")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id        Int      @id @default(autoincrement())
+  word      String
+  meaning   String
+  example   String
+  entryDate String   @unique @map("entry_date")
+  createdAt DateTime @default(now()) @map("created_at")
 }
 
 model AudioEntry {

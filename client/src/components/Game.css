@@ -1,0 +1,14 @@
+/* Game.css */
+.input-box {
+    transition: background-color 0.5s ease;
+  }
+  
+  @keyframes colorFill {
+    from {
+      background-size: 100% 0;
+    }
+    to {
+      background-size: 100% 100%;
+    }
+  }
+  

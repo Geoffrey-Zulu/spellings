@@ -4,14 +4,20 @@ import { faPlayCircle, faStopCircle } from '@fortawesome/free-solid-svg-icons';
 import audioWave from '../assets/images/audio-wave.gif';
 import audioStop from '../assets/images/audio-stop.png';
 import axios from 'axios';
+import './Game.css';
+import Modal from './Modal';
+import LifeBar from './LifeBar';
 
 const Game = () => {
   const [currentWord, setCurrentWord] = useState('');
-  const [isPlaying, setIsPlaying] = useState([false, false, false]); 
+  const [isPlaying, setIsPlaying] = useState([false, false, false]);
   const [audioUrls, setAudioUrls] = useState([null, null, null]);
-  const audioRefs = [useRef(null), useRef(null), useRef(null)]; 
-
-  const maxWordLength = 10;
+  const [lives, setLives] = useState(5);
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState('');
+  const [correctWord, setCorrectWord] = useState(''); // Initialize correctWord
+  const audioRefs = [useRef(null), useRef(null), useRef(null)];
+  const maxWordLength = 13; // Increased length to 13
 
   const handleKeyClick = (letter) => {
     if (currentWord.length < maxWordLength) {
@@ -26,16 +32,14 @@ const Game = () => {
   const handlePlayClick = (index) => {
     setIsPlaying((prev) => prev.map((state, i) => {
       if (i === index && state) {
-        // If the same audio is playing, stop it
         audioRefs[index].current.pause();
-        audioRefs[index].current.currentTime = 0; 
+        audioRefs[index].current.currentTime = 0;
         return false;
       } else {
-        // Otherwise, stop all other audios and play the selected one
         audioRefs.forEach((audioRef, i) => {
           if (audioRef.current) {
             audioRef.current.pause();
-            audioRef.current.currentTime = 0; 
+            audioRef.current.currentTime = 0;
           }
         });
         return i === index;
@@ -43,7 +47,6 @@ const Game = () => {
     }));
   };
 
-  // Effect to handle audio playback
   useEffect(() => {
     audioRefs.forEach((audioRef, index) => {
       if (audioRef.current) {
@@ -55,20 +58,17 @@ const Game = () => {
   }, [isPlaying]);
 
   useEffect(() => {
-    // Fetch today's word and audio data
     const fetchData = async () => {
       try {
         const response = await axios.get('http://localhost:3001/api/today/today');
-        const { wordAudioUrl, meaningAudioUrl, exampleAudioUrl } = response.data;
-
-        // Construct full URLs
-        const baseUrl = 'http://localhost:3001'; 
+        const { word, wordAudioUrl, meaningAudioUrl, exampleAudioUrl } = response.data;
+        setCorrectWord(word); // Set the correct word
+        const baseUrl = 'http://localhost:3001';
         setAudioUrls([
           `${baseUrl}${wordAudioUrl}`,
           `${baseUrl}${meaningAudioUrl}`,
           `${baseUrl}${exampleAudioUrl}`
         ]);
-        
       } catch (error) {
         console.error('Error fetching audio data:', error);
       }
@@ -76,6 +76,41 @@ const Game = () => {
 
     fetchData();
   }, []);
+
+  const handleSubmit = async () => {
+    if (!currentWord) return;
+
+    // Check if the current word matches the correct word
+    if (currentWord === correctWord) {
+      setModalContent(`Congratulations! You've guessed the word!`);
+      setShowModal(true);
+      flashSquares('green');
+    } else {
+      if (lives > 1) {
+        flashSquares('red');
+        setLives(lives - 1);
+      } else {
+        setModalContent(`Out of tries! The correct word was "${correctWord}".`);
+        setShowModal(true);
+        setLives(0);
+      }
+    }
+    setTimeout(() => {
+      setCurrentWord('');
+    }, 1000); // Clear input after showing the animation
+  };
+
+  const flashSquares = (color) => {
+    const squares = document.querySelectorAll('.input-box');
+    squares.forEach((square) => {
+      square.style.backgroundColor = color;
+    });
+    setTimeout(() => {
+      squares.forEach((square) => {
+        square.style.backgroundColor = 'white';
+      });
+    }, 500); // Animation duration
+  };
 
   return (
     <div className="flex flex-col items-center py-10 space-y-8">
@@ -107,12 +142,12 @@ const Game = () => {
       </div>
 
       {/* Dynamic Input Boxes */}
-      <div className="flex space-x-2"> 
+      <div className="flex space-x-2">
         {[...Array(maxWordLength)].map((_, index) => (
           <div
             key={index}
-            className={`w-12 h-12 border-2 border-gray-300 flex items-center justify-center text-2xl font-semibold rounded shadow-md ${
-              index === 0 ? "" : (index < currentWord.length ? "" : "invisible") 
+            className={`input-box w-10 h-10 border-2 border-gray-300 flex items-center justify-center text-xl font-semibold rounded shadow-md ${
+              index === 0 ? "" : (index < currentWord.length ? "" : "invisible")
             }`}
           >
             {currentWord[index] || ''}
@@ -127,7 +162,7 @@ const Game = () => {
           {['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'].map((letter) => (
             <button
               key={letter}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded shadow-md focus:outline-none" 
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded shadow-md focus:outline-none"
               onClick={() => handleKeyClick(letter)}
             >
               {letter}
@@ -137,7 +172,7 @@ const Game = () => {
 
         {/* Second Row */}
         <div className="grid grid-cols-10 gap-2">
-          <div className="col-start-2 col-span-8 grid grid-cols-9 gap-2"> {/* Center alignment */}
+          <div className="col-start-2 col-span-8 grid grid-cols-9 gap-2">
             {['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'].map((letter) => (
               <button
                 key={letter}
@@ -151,14 +186,14 @@ const Game = () => {
         </div>
 
         {/* Third Row */}
-        <div className="grid grid-cols-10 gap-2"> 
+        <div className="grid grid-cols-10 gap-2">
           <button
             className="col-span-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded shadow-md focus:outline-none"
             onClick={handleBackspace}
           >
             ⌫
           </button>
-          <div className="col-start-3 col-span-6 grid grid-cols-7 gap-2"> {/* Center alignment */}
+          <div className="col-start-3 col-span-6 grid grid-cols-7 gap-2">
             {['Z', 'X', 'C', 'V', 'B', 'N', 'M'].map((letter) => (
               <button
                 key={letter}
@@ -171,12 +206,18 @@ const Game = () => {
           </div>
           <button
             className="col-span-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md focus:outline-none"
-            onClick={() => alert('Enter pressed')}
+            onClick={handleSubmit}
           >
             Enter
           </button>
         </div>
       </div>
+
+      {/* Life Bar */}
+      <LifeBar lives={lives} />
+
+      {/* Modal for Result */}
+      {showModal && <Modal content={modalContent} onClose={() => setShowModal(false)} />}
     </div>
   );
 };
