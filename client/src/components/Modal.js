@@ -1,13 +1,13 @@
 import React from 'react';
 import './Modal.css';
 
-const Modal = ({ content, onClose, children }) => {
+const Modal = ({ content, onClose, onCopy }) => {
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <button className="modal-close" onClick={onClose}>×</button>
-        <div>{content}</div>
-        {children}
+        <p>{content}</p>
+        <button onClick={onClose} className="modal-close">Close</button>
+        {onCopy && <button onClick={onCopy} className="modal-copy">Copy Text</button>}
       </div>
     </div>
   );

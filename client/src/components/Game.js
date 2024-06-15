@@ -12,41 +12,12 @@ const Game = () => {
   const [currentWord, setCurrentWord] = useState('');
   const [isPlaying, setIsPlaying] = useState([false, false, false]);
   const [audioUrls, setAudioUrls] = useState([null, null, null]);
-  const [lives, setLives] = useState(() => {
-    const savedLives = localStorage.getItem('lives');
-    return savedLives ? parseInt(savedLives, 10) : 5;
-  });
-  const [attempts, setAttempts] = useState(() => {
-    const savedAttempts = localStorage.getItem('attempts');
-    return savedAttempts ? parseInt(savedAttempts, 10) : 0;
-  });
+  const [lives, setLives] = useState(localStorage.getItem('lives') ? parseInt(localStorage.getItem('lives')) : 5);
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState('');
-  const [correctWord, setCorrectWord] = useState('');
+  const [correctWord, setCorrectWord] = useState(localStorage.getItem('correctWord') || ''); // Initialize correctWord
   const audioRefs = [useRef(null), useRef(null), useRef(null)];
   const maxWordLength = 13;
-
-  useEffect(() => {
-    const lastPlayDate = localStorage.getItem('lastPlayDate');
-    const today = new Date().toISOString().split('T')[0];
-    if (lastPlayDate !== today) {
-      localStorage.clear();
-      localStorage.setItem('lastPlayDate', today);
-      setLives(5);
-      setAttempts(0);
-    } else {
-      // Check if the user has already won or lost today
-      const result = localStorage.getItem('result');
-      if (result) {
-        if (result === 'win') {
-          setModalContent('Congratulations! You have already won today!');
-        } else {
-          setModalContent('You have already played today. Try again tomorrow!');
-        }
-        setShowModal(true);
-      }
-    }
-  }, []);
 
   const handleKeyClick = (letter) => {
     if (currentWord.length < maxWordLength) {
@@ -65,7 +36,7 @@ const Game = () => {
         audioRefs[index].current.currentTime = 0;
         return false;
       } else {
-        audioRefs.forEach((audioRef, i) => {
+        audioRefs.forEach((audioRef) => {
           if (audioRef.current) {
             audioRef.current.pause();
             audioRef.current.currentTime = 0;
@@ -91,7 +62,9 @@ const Game = () => {
       try {
         const response = await axios.get('http://localhost:3001/api/today/today');
         const { word, wordAudioUrl, meaningAudioUrl, exampleAudioUrl } = response.data;
-        setCorrectWord(word);
+        setCorrectWord(word); 
+        localStorage.setItem('correctWord', word); // Cache the correct word
+
         const baseUrl = 'http://localhost:3001';
         setAudioUrls([
           `${baseUrl}${wordAudioUrl}`,
@@ -103,34 +76,33 @@ const Game = () => {
       }
     };
 
-    fetchData();
+    if (!localStorage.getItem('correctWord')) {
+      fetchData();
+    }
   }, []);
 
   const handleSubmit = async () => {
     if (!currentWord) return;
 
-    setAttempts(prev => prev + 1);
-
     if (currentWord.toLowerCase() === correctWord.toLowerCase()) {
-      setModalContent('Congratulations! You\'ve guessed the word!');
-      setShowModal(true);
+      setModalContent(`Congratulations! You've guessed the word!`);
+      localStorage.setItem('gameStatus', 'won'); // Cache the game status
       flashSquares('green');
-      localStorage.setItem('result', 'win');
+      setTimeout(() => {
+        setShowModal(true);
+      }, 1500);
     } else {
       if (lives > 1) {
         flashSquares('red');
         setLives(lives - 1);
+        localStorage.setItem('lives', lives - 1); // Cache remaining lives
       } else {
         setModalContent(`Out of tries! The correct word was "${correctWord}".`);
+        localStorage.setItem('gameStatus', 'lost'); // Cache the game status
         setShowModal(true);
         setLives(0);
-        localStorage.setItem('result', 'lose');
       }
     }
-
-    localStorage.setItem('lives', lives - 1);
-    localStorage.setItem('attempts', attempts + 1);
-
     setTimeout(() => {
       setCurrentWord('');
     }, 1000);
@@ -148,12 +120,32 @@ const Game = () => {
     }, 500);
   };
 
+  const handleCopy = () => {
+    const tries = 5 - lives;
+    const resultMessage = `Adess Spelling\n${tries}/5\n\n⬛⬛⬛⬛⬛ 🟩🟩🟩🟩🟩\nLink: http://yourwebsite.com`;
+    navigator.clipboard.writeText(resultMessage);
+    alert('Results copied to clipboard!');
+  };
+
+  useEffect(() => {
+    const gameStatus = localStorage.getItem('gameStatus');
+    if (gameStatus === 'won') {
+      setModalContent(`Congratulations! You've guessed the word!`);
+      setShowModal(true);
+    } else if (gameStatus === 'lost') {
+      setModalContent(`Out of tries! The correct word was "${correctWord}".`);
+      setShowModal(true);
+    }
+  }, []);
+
   return (
     <div className="flex flex-col items-center py-10 space-y-8">
+      {/* Audio Waveform Animation */}
       <div className="flex space-x-4">
         <img src={isPlaying.some((state) => state) ? audioWave : audioStop} alt="Audio Status" className="w-10 h-10" />
       </div>
 
+      {/* Labels with Play Icons */}
       <div className="space-y-4 text-center">
         {['Word', 'Definition', 'Example'].map((label, index) => (
           <div key={index} className="text-xl font-semibold flex items-center justify-center">
@@ -175,6 +167,7 @@ const Game = () => {
         ))}
       </div>
 
+      {/* Dynamic Input Boxes */}
       <div className="flex space-x-2">
         {[...Array(maxWordLength)].map((_, index) => (
           <div
@@ -188,7 +181,9 @@ const Game = () => {
         ))}
       </div>
 
+      {/* Custom Keyboard */}
       <div className="mt-8 space-y-2">
+        {/* First Row */}
         <div className="grid grid-cols-10 gap-2">
           {['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'].map((letter) => (
             <button
@@ -201,6 +196,7 @@ const Game = () => {
           ))}
         </div>
 
+        {/* Second Row */}
         <div className="grid grid-cols-10 gap-2">
           <div className="col-start-2 col-span-8 grid grid-cols-9 gap-2">
             {['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'].map((letter) => (
@@ -215,6 +211,7 @@ const Game = () => {
           </div>
         </div>
 
+        {/* Third Row */}
         <div className="grid grid-cols-10 gap-2">
           <button
             className="col-span-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-4 rounded shadow-md focus:outline-none"
@@ -242,23 +239,11 @@ const Game = () => {
         </div>
       </div>
 
+      {/* Life Bar */}
       <LifeBar lives={lives} />
 
-      {showModal && (
-        <Modal content={modalContent} onClose={() => setShowModal(false)}>
-          {modalContent === 'Congratulations! You\'ve guessed the word!' && (
-            <button
-              className="bg-green-500 text-white font-bold py-2 px-4 rounded mt-4"
-              onClick={() => {
-                // Handle sharing logic here
-                alert('Share functionality to be implemented.');
-              }}
-            >
-              Share
-            </button>
-          )}
-        </Modal>
-      )}
+      {/* Modal for Result */}
+      {showModal && <Modal content={modalContent} onClose={() => setShowModal(false)} onCopy={handleCopy} />}
     </div>
   );
 };
