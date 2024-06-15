@@ -13,23 +13,20 @@ const Game = () => {
   const [isPlaying, setIsPlaying] = useState([false, false, false]);
   const [audioUrls, setAudioUrls] = useState([null, null, null]);
   const [lives, setLives] = useState(() => {
-    // Retrieve lives from localStorage or default to 5
     const savedLives = localStorage.getItem('lives');
     return savedLives ? parseInt(savedLives, 10) : 5;
   });
   const [attempts, setAttempts] = useState(() => {
-    // Retrieve attempts from localStorage or default to 0
     const savedAttempts = localStorage.getItem('attempts');
     return savedAttempts ? parseInt(savedAttempts, 10) : 0;
   });
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState('');
-  const [correctWord, setCorrectWord] = useState(''); 
+  const [correctWord, setCorrectWord] = useState('');
   const audioRefs = [useRef(null), useRef(null), useRef(null)];
   const maxWordLength = 13;
 
   useEffect(() => {
-    // Clear cache if a new day starts
     const lastPlayDate = localStorage.getItem('lastPlayDate');
     const today = new Date().toISOString().split('T')[0];
     if (lastPlayDate !== today) {
@@ -37,6 +34,17 @@ const Game = () => {
       localStorage.setItem('lastPlayDate', today);
       setLives(5);
       setAttempts(0);
+    } else {
+      // Check if the user has already won or lost today
+      const result = localStorage.getItem('result');
+      if (result) {
+        if (result === 'win') {
+          setModalContent('Congratulations! You have already won today!');
+        } else {
+          setModalContent('You have already played today. Try again tomorrow!');
+        }
+        setShowModal(true);
+      }
     }
   }, []);
 
@@ -83,7 +91,7 @@ const Game = () => {
       try {
         const response = await axios.get('http://localhost:3001/api/today/today');
         const { word, wordAudioUrl, meaningAudioUrl, exampleAudioUrl } = response.data;
-        setCorrectWord(word); 
+        setCorrectWord(word);
         const baseUrl = 'http://localhost:3001';
         setAudioUrls([
           `${baseUrl}${wordAudioUrl}`,
@@ -104,9 +112,10 @@ const Game = () => {
     setAttempts(prev => prev + 1);
 
     if (currentWord.toLowerCase() === correctWord.toLowerCase()) {
-      setModalContent(`Congratulations! You've guessed the word!`);
+      setModalContent('Congratulations! You\'ve guessed the word!');
       setShowModal(true);
       flashSquares('green');
+      localStorage.setItem('result', 'win');
     } else {
       if (lives > 1) {
         flashSquares('red');
@@ -115,10 +124,10 @@ const Game = () => {
         setModalContent(`Out of tries! The correct word was "${correctWord}".`);
         setShowModal(true);
         setLives(0);
+        localStorage.setItem('result', 'lose');
       }
     }
 
-    // Save lives and attempts to localStorage
     localStorage.setItem('lives', lives - 1);
     localStorage.setItem('attempts', attempts + 1);
 
@@ -136,7 +145,7 @@ const Game = () => {
       squares.forEach((square) => {
         square.style.backgroundColor = 'white';
       });
-    }, 500); 
+    }, 500);
   };
 
   return (
@@ -235,7 +244,21 @@ const Game = () => {
 
       <LifeBar lives={lives} />
 
-      {showModal && <Modal content={modalContent} onClose={() => setShowModal(false)} />}
+      {showModal && (
+        <Modal content={modalContent} onClose={() => setShowModal(false)}>
+          {modalContent === 'Congratulations! You\'ve guessed the word!' && (
+            <button
+              className="bg-green-500 text-white font-bold py-2 px-4 rounded mt-4"
+              onClick={() => {
+                // Handle sharing logic here
+                alert('Share functionality to be implemented.');
+              }}
+            >
+              Share
+            </button>
+          )}
+        </Modal>
+      )}
     </div>
   );
 };
