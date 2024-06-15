@@ -7,6 +7,7 @@ body {
   background-color: #F5F5F5;
   font-family: 'Istok Web', sans-serif;
 }
+
 .button {
   transition: background-color 0.3s ease;
 }
